@@ -1,0 +1,3 @@
+# Project exclude paths
+/fairseq_models/
+/venv/

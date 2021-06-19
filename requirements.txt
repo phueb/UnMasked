@@ -1,0 +1,12 @@
+torch~=1.6.0
+numpy~=1.20.3
+pandas~=0.25.1
+transformers~=4.3.3
+tokenizers~=0.10.1
+PyYAML==5.4.1
+gluonnlp~=0.8.3
+fairseq~=0.10.0
+PyPrind~=2.11.2
+datasets~=1.4.1
+mxnet~=1.8.0.post0
+packaging~=20.9
