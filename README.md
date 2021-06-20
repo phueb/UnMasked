@@ -1,10 +1,12 @@
-# UnMasked
+<div align="center">
+ <img src="images/logo.png" width="250"> 
+</div>
 
 Score masked language models on grammatical knowledge test suites.
 
 ## Test Suites
 
-- [BLiMP]https://github.com/alexwarstadt/blimp)
+- [BLiMP](https://github.com/alexwarstadt/blimp)
 - [Zorro](https://github.com/phueb/Zorro)
 
 ## Models
@@ -23,9 +25,9 @@ In contrast, the holistic scoring proposed by [Zaczynska et al., 2020](https://a
 and instead computes the sum of the cross-entropy errors for every token in the input.
 
 These two methods produce very different results. 
-The holistic method - which uses raw input - favors models trained without predicting unmasked tokens, 
+The holistic method favors models trained without predicting unmasked tokens, 
 and handicaps those that were trained in this way (all Roberta models save for BabyBERTa).
-The 'MLM" method - which requires additional pre-processing of input - does not handicap models trained with predicting unmasked tokens, 
+The 'MLM" method does not handicap models trained with predicting unmasked tokens, 
 because it uses mask symbols to compute scores, 
 which ensures that a model never has access to information in the input about what word it should predict.
 
