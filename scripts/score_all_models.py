@@ -23,63 +23,109 @@ RoBERTa-base+10M                 79.55 (up)
 BabyBERTa+concatenated           86.5  (same)
 RoBERTa-base+30B                 91.13 (up)
 """
-import shutil
+import pandas as pd
+from collections import defaultdict
 
 from unmasked.mlm.scoring import mlm_score_model_on_paradigm
 from unmasked.holistic.scoring import holistic_score_model_on_paradigm
 from unmasked import configs
-from unmasked.models import load_babyberta_models, load_roberta_base_models
+from unmasked.utils import calc_accuracy_from_scores
+from unmasked.models import load_babyberta_models, load_roberta_base_models, ModelData
 
 BABYBERTA_PARAMS = [1]  # which BabyBerta models to load
 OVERWRITE = False  # set to True to remove existing scores and re-score
 TEST_SUITE_NAME = 'zorro'  # zorro or blimp
-LOWER_CASE = True  # this affects both zorro (proper nouns) and blimp
 
 if TEST_SUITE_NAME == 'blimp':
-    num_paradigms = 67
+    num_expected_scores = 2000
 elif TEST_SUITE_NAME == 'zorro':
-    num_paradigms = 23
+    num_expected_scores = 4000
 else:
     raise AttributeError('Invalid "TEST_SUITE_NAME".')
 
+# load previously generated dataframe with model accuracies
+df_path = configs.Dirs.results / f'{TEST_SUITE_NAME}.csv'
+if df_path.exists():
+    df_old = pd.read_csv(df_path)
+else:
+    df_old = pd.DataFrame()
 
 # load all models
-name2model = {}
-name2model.update(load_babyberta_models(BABYBERTA_PARAMS))
-# name2model.update(load_roberta_base_models())
+models_data = []
+models_data.extend(load_babyberta_models(BABYBERTA_PARAMS))
+models_data.extend(load_roberta_base_models())
 
-for model_name, (model, tokenizer) in name2model.items():
+sub_dfs = [df_old]
+for model_data in models_data:
 
-    print(f'model_name={model_name}')
+    model_data: ModelData
+    model = model_data.model
+    tokenizer = model_data.tokenizer
 
-    path_model = configs.Dirs.results / TEST_SUITE_NAME / f'lower_case={LOWER_CASE}' / model_name
+    # skip scoring if accuracies already exists in data frame
+    bool_id = (df_old['model'].str.contains(model_data.name)) & \
+              (df_old['corpora'].str.contains(model_data.corpora)) & \
+              (df_old['rep'].str.contains(model_data.rep))
+    if not OVERWRITE and df_old[bool_id].any(axis=None):
+        print(f'Skipping {model_data.name}_{model_data.corpora}+{model_data.rep}')
+        continue
+
+    print()
 
     model.eval()
     model.cuda(0)
 
-    # compute and save scores
-    for path_paradigm in (configs.Dirs.test_suites / TEST_SUITE_NAME).glob('*.txt'):
+    # init data for data-frame
+    model_scoring_data = defaultdict(list)
 
-        for scoring_method in ['mlm', 'holistic']:
+    # for each scoring method
+    for scoring_method in ['mlm', 'holistic']:
 
-            if scoring_method == 'mlm':
-                score_model_on_paradigm = mlm_score_model_on_paradigm
-            elif scoring_method == 'holistic':
-                score_model_on_paradigm = holistic_score_model_on_paradigm
-            else:
-                raise AttributeError('Invalid scoring_method.')
+        if scoring_method == 'mlm':
+            score_model_on_paradigm = mlm_score_model_on_paradigm
+        elif scoring_method == 'holistic':
+            score_model_on_paradigm = holistic_score_model_on_paradigm
+        else:
+            raise AttributeError('Invalid scoring_method.')
 
-            path_results_file = path_model / scoring_method / path_paradigm.name
+        # collect model scoring data
+        model_scoring_data['model'].append(model_data.name)
+        model_scoring_data['corpora'].append(model_data.corpora)
+        model_scoring_data['rep'].append(model_data.rep)
+        model_scoring_data['scoring_method'].append(scoring_method)
 
-            if path_results_file.exists() and not OVERWRITE:
-                continue
+        # should model be evaluated on lower-cased input?
+        if model_data.case_sensitive and model_data.trained_on_lower_cased_data:
+            lower_case = True
+        else:
+            lower_case = False
 
-            if not path_results_file.parent.exists():
-                path_results_file.parent.mkdir(parents=True)
+        # for each paradigm in test suite
+        for path_paradigm in (configs.Dirs.test_suites / TEST_SUITE_NAME).glob('*.txt'):
 
             # scoring
-            print(f"Scoring pairs in {path_paradigm.name:<60} with {model_name:<60} and method={scoring_method}")
-            scores = score_model_on_paradigm(model, tokenizer, path_paradigm, lower_case=LOWER_CASE)
-            with path_results_file.open('w') as f:
-                f.write('\n'.join([str(score) for score in scores]))
+            print(f"Scoring pairs in {path_paradigm.name:<60} with {model_data.name:<60} and method={scoring_method}")
+            scores = score_model_on_paradigm(model, tokenizer, path_paradigm, lower_case=lower_case)
 
+            assert len(scores) == num_expected_scores
+
+            # compute accuracy
+            accuracy = calc_accuracy_from_scores(scores, scoring_method)
+
+            # collect accuracy
+            model_scoring_data[path_paradigm.stem].append(accuracy)
+
+    # prepare and collect sub-dataframe
+    df_sub = pd.DataFrame(data=model_scoring_data)
+    df_sub = df_sub[['model'] +
+                    [col_name for col_name in sorted(df_sub.columns) if col_name != 'model']]  # sort columns
+    df_sub['overall'] = df_sub.mean(axis=1)
+    df_sub = df_sub.sort_values(axis=0, by='overall').round(2)
+    sub_dfs.append(df_sub)
+
+    print(df_sub[['model', 'corpora', 'rep', 'scoring_method', 'overall']])
+
+    # save combined data frame
+    df = pd.concat(sub_dfs, axis=0)
+    df = df.drop_duplicates()
+    df.to_csv(configs.Dirs.results / f'{TEST_SUITE_NAME}.csv', index=False)

@@ -153,6 +153,6 @@ def convert_fairseq_roberta_to_pytorch(
     if not success:
         raise Exception("Something went wRoNg")
 
-    tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+    tokenizer = RobertaTokenizerFast.from_pretrained('roberta-base')
 
     return model, tokenizer
