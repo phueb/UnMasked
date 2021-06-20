@@ -120,3 +120,23 @@ zorro_file_name2phenomenon = {
     'island-effects-coordinate_structure_constraint': 'island effects',
 
 }
+
+zorro_phenomena = sorted([v for v in zorro_file_name2phenomenon.values()])
+blimp_phenomena = sorted([v for v in zorro_file_name2phenomenon.values()])
+zorro_phenomenon2fns = {phenomenon: [pa for pa, ph in zorro_file_name2phenomenon.items() if ph == phenomenon]
+                        for phenomenon in zorro_phenomena}
+blimp_phenomenon2fns = {phenomenon: [pa for pa, ph in blimp_file_name2phenomenon.items() if ph == phenomenon]
+                        for phenomenon in blimp_phenomena}
+
+
+def shorten_phenomenon(phenomenon: str,
+                       ) -> str:
+    phenomenon = phenomenon.replace('determiner-noun', 'det. noun')
+    phenomenon = phenomenon.replace('agreement', 'agr.')
+    phenomenon = phenomenon.replace('argument', 'arg.')
+    phenomenon = phenomenon.replace('coordinate', 'coord.')
+    phenomenon = phenomenon.replace('structure', 'struct.')
+    phenomenon = phenomenon.replace('attractor', 'attr.')
+    phenomenon = phenomenon.replace('licensing', 'lic.')
+
+    return phenomenon

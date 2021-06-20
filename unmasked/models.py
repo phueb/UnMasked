@@ -22,7 +22,7 @@ from unmasked.convert_fairseq_roberta import convert_fairseq_roberta_to_pytorch
 class ModelData:
     name: str
     corpora: str
-    rep: str
+    rep: int
     model: RobertaForMaskedLM
     tokenizer: RobertaTokenizerFast
 
@@ -42,21 +42,19 @@ def load_babyberta_models(param_numbers: List[int],
     """
     res = []
     for param_name in [f'param_{i:03}' for i in param_numbers]:
-        for path_to_babyberta in (configs.Dirs.babyberta_runs / param_name).glob('**/saves/'):
+        for rep, path_to_babyberta in enumerate((configs.Dirs.babyberta_runs / param_name).glob('**/saves/')):
             with (configs.Dirs.babyberta_runs / param_name / 'param2val.yaml').open('r') as f:
                 param2val = yaml.load(f, Loader=yaml.FullLoader)
             if param2val['corpora'] == ('aochildes',):
                 corpora = 'AO-CHILDES'
-            elif param2val['corpora'] == ('wikipedia-1',):
+            elif param2val['corpora'] == ('wikipedia1',):
                 corpora = 'Wikipedia-1'
             elif param2val['corpora'] == ('aonewsela',):
                 corpora = 'AO-Newsela'
             else:
-                raise NotImplementedError
-            rep = path_to_babyberta.parent.name
-            model_path = configs.Dirs.babyberta_runs / param_name / rep / 'saves'
-            model = RobertaForMaskedLM.from_pretrained(str(model_path))
-            tokenizer = RobertaTokenizerFast.from_pretrained(str(model_path),
+                raise NotImplementedError(param2val['corpora'])
+            model = RobertaForMaskedLM.from_pretrained(str(path_to_babyberta))
+            tokenizer = RobertaTokenizerFast.from_pretrained(str(path_to_babyberta),
                                                              add_prefix_space=True,  # this must be added
                                                              )
 
@@ -78,7 +76,7 @@ def load_fairseq_as_huggingface_models() -> List[ModelData]:
 
     res = []
     for path_model_data in configs.Dirs.fairseq_models.glob('*'):
-        for checkpoint_path in path_model_data.glob(f'checkpoint_last+rep=*.pt'):
+        for checkpoint_path in path_model_data.glob(f'checkpoint_last_*.pt'):
 
             if 'AO-CHILDES' in path_model_data.name:
                 bin_name = 'aochildes-data-bin'
@@ -96,10 +94,10 @@ def load_fairseq_as_huggingface_models() -> List[ModelData]:
             model, tokenizer = convert_fairseq_roberta_to_pytorch(model_fairseq)
 
             # collect
-            rep = checkpoint_path.stem.split('+')[-1]
+            rep = checkpoint_path.stem[-1]
             model_data = ModelData(name='RoBERTa-base',
                                    corpora=corpora,
-                                   rep=rep,
+                                   rep=int(rep),
                                    model=model,
                                    tokenizer=tokenizer,
                                    case_sensitive=True,
@@ -115,7 +113,7 @@ def load_roberta_base_models():
     # pre-trained by others
     huggingface_models = [ModelData(name='RoBERTa-base',
                                     corpora='Warstadt2020',
-                                    rep='0',
+                                    rep=0,
                                     model=AutoModelForMaskedLM.from_pretrained("nyu-mll/roberta-base-10M-1"),
                                     tokenizer=AutoTokenizer.from_pretrained("nyu-mll/roberta-base-10M-1"),
                                     case_sensitive=True,
@@ -123,7 +121,7 @@ def load_roberta_base_models():
                                     ),
                           ModelData(name='RoBERTa-base',
                                     corpora='Warstadt2020',
-                                    rep='1',
+                                    rep=1,
                                     model=AutoModelForMaskedLM.from_pretrained("nyu-mll/roberta-base-10M-2"),
                                     tokenizer=AutoTokenizer.from_pretrained("nyu-mll/roberta-base-10M-2"),
                                     case_sensitive=True,
@@ -131,7 +129,7 @@ def load_roberta_base_models():
                                     ),
                           ModelData(name='RoBERTa-base',
                                     corpora='Warstadt2020',
-                                    rep='2',
+                                    rep=2,
                                     model=AutoModelForMaskedLM.from_pretrained("nyu-mll/roberta-base-10M-3"),
                                     tokenizer=AutoTokenizer.from_pretrained("nyu-mll/roberta-base-10M-3"),
                                     case_sensitive=True,
@@ -139,7 +137,7 @@ def load_roberta_base_models():
                                     ),
                           ModelData(name='RoBERTa-base',
                                     corpora='Liu2019',
-                                    rep='0',
+                                    rep=0,
                                     model=RobertaForMaskedLM.from_pretrained('roberta-base'),
                                     tokenizer=RobertaTokenizerFast.from_pretrained('roberta-base'),
                                     case_sensitive=True,

@@ -8,3 +8,6 @@ class Dirs:
     results = root / 'results'
     babyberta_runs = Path('/') / 'media' / 'ludwig_data' / 'BabyBERTa' / 'runs'  # restricted access
 
+
+class Scoring:
+    batch_size = 200

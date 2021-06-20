@@ -32,8 +32,8 @@ from unmasked import configs
 from unmasked.utils import calc_accuracy_from_scores
 from unmasked.models import load_babyberta_models, load_roberta_base_models, ModelData
 
-BABYBERTA_PARAMS = [1]  # which BabyBerta models to load
-OVERWRITE = False  # set to True to remove existing scores and re-score
+BABYBERTA_PARAMS = [1, 2, 3]  # which BabyBerta models to load from shared drive with restricted access
+OVERWRITE = True  # set to True to remove existing scores and re-score
 TEST_SUITE_NAME = 'zorro'  # zorro or blimp
 
 if TEST_SUITE_NAME == 'blimp':
@@ -46,7 +46,7 @@ else:
 # load previously generated dataframe with model accuracies
 df_path = configs.Dirs.results / f'{TEST_SUITE_NAME}.csv'
 if df_path.exists():
-    df_old = pd.read_csv(df_path)
+    df_old = pd.read_csv(df_path, index_col=False)
 else:
     df_old = pd.DataFrame()
 
@@ -65,9 +65,9 @@ for model_data in models_data:
     # skip scoring if accuracies already exists in data frame
     bool_id = (df_old['model'].str.contains(model_data.name)) & \
               (df_old['corpora'].str.contains(model_data.corpora)) & \
-              (df_old['rep'].str.contains(model_data.rep))
+              (df_old['rep'] == model_data.rep)
     if not OVERWRITE and df_old[bool_id].any(axis=None):
-        print(f'Skipping {model_data.name}_{model_data.corpora}+{model_data.rep}')
+        print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
         continue
 
     print()
@@ -97,6 +97,7 @@ for model_data in models_data:
         # should model be evaluated on lower-cased input?
         if model_data.case_sensitive and model_data.trained_on_lower_cased_data:
             lower_case = True
+            print('WARNING: Will score with lower-cased input.')
         else:
             lower_case = False
 
@@ -127,5 +128,4 @@ for model_data in models_data:
 
     # save combined data frame
     df = pd.concat(sub_dfs, axis=0)
-    df = df.drop_duplicates()
     df.to_csv(configs.Dirs.results / f'{TEST_SUITE_NAME}.csv', index=False)

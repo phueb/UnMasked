@@ -6,6 +6,7 @@ from torch.nn import CrossEntropyLoss
 
 from transformers.models.roberta import RobertaForMaskedLM, RobertaTokenizerFast
 
+from unmasked import configs
 
 def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
                                      tokenizer: RobertaTokenizerFast,
@@ -32,10 +33,9 @@ def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
     loss_fct = CrossEntropyLoss(reduction='none')
     with torch.no_grad():
 
-        batch_size = 250
-        for start in range(0, len(sentences), batch_size):
+        for start in range(0, len(sentences), configs.Scoring.batch_size):
             # batch sentences
-            end = min(len(sentences), start + batch_size)
+            end = min(len(sentences), start + configs.Scoring.batch_size)
             x = tokenizer.batch_encode_plus(sentences[start:end],
                                             padding='longest',
                                             max_length=512,
