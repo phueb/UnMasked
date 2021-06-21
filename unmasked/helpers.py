@@ -1,3 +1,6 @@
+from typing import List, Tuple
+
+
 blimp_file_name2phenomenon = {
 
     'anaphor_gender_agreement': 'anaphor agreement',

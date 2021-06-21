@@ -10,4 +10,13 @@ class Dirs:
 
 
 class Scoring:
-    batch_size = 200
+    batch_size = 100
+
+
+class Figs:
+    lw = 1
+    ax_font_size = 6
+    leg_font_size = 6
+    title_font_size = 6
+    tick_font_size = 6
+    legend_offset_from_bottom = 0.15

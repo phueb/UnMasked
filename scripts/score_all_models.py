@@ -33,7 +33,7 @@ from unmasked.utils import calc_accuracy_from_scores
 from unmasked.models import load_babyberta_models, load_roberta_base_models, ModelData
 
 BABYBERTA_PARAMS = [1, 2, 3]  # which BabyBerta models to load from shared drive with restricted access
-OVERWRITE = True  # set to True to remove existing scores and re-score
+OVERWRITE = False  # set to True to remove existing scores and re-score
 TEST_SUITE_NAME = 'zorro'  # zorro or blimp
 
 if TEST_SUITE_NAME == 'blimp':
@@ -45,7 +45,7 @@ else:
 
 # load previously generated dataframe with model accuracies
 df_path = configs.Dirs.results / f'{TEST_SUITE_NAME}.csv'
-if df_path.exists():
+if df_path.exists() and not OVERWRITE:
     df_old = pd.read_csv(df_path, index_col=False)
 else:
     df_old = pd.DataFrame()
@@ -63,12 +63,13 @@ for model_data in models_data:
     tokenizer = model_data.tokenizer
 
     # skip scoring if accuracies already exists in data frame
-    bool_id = (df_old['model'].str.contains(model_data.name)) & \
+    if not OVERWRITE and df_old.any(axis=None):
+        bool_id = (df_old['model'].str.contains(model_data.name)) & \
               (df_old['corpora'].str.contains(model_data.corpora)) & \
               (df_old['rep'] == model_data.rep)
-    if not OVERWRITE and df_old[bool_id].any(axis=None):
-        print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
-        continue
+        if df_old[bool_id].any(axis=None):
+            print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
+            continue
 
     print()
 
@@ -76,7 +77,7 @@ for model_data in models_data:
     model.cuda(0)
 
     # init data for data-frame
-    model_scoring_data = defaultdict(list)
+    model_accuracy_data = defaultdict(list)
 
     # for each scoring method
     for scoring_method in ['mlm', 'holistic']:
@@ -89,10 +90,10 @@ for model_data in models_data:
             raise AttributeError('Invalid scoring_method.')
 
         # collect model scoring data
-        model_scoring_data['model'].append(model_data.name)
-        model_scoring_data['corpora'].append(model_data.corpora)
-        model_scoring_data['rep'].append(model_data.rep)
-        model_scoring_data['scoring_method'].append(scoring_method)
+        model_accuracy_data['model'].append(model_data.name)
+        model_accuracy_data['corpora'].append(model_data.corpora)
+        model_accuracy_data['rep'].append(model_data.rep)
+        model_accuracy_data['scoring_method'].append(scoring_method)
 
         # should model be evaluated on lower-cased input?
         if model_data.case_sensitive and model_data.trained_on_lower_cased_data:
@@ -114,10 +115,10 @@ for model_data in models_data:
             accuracy = calc_accuracy_from_scores(scores, scoring_method)
 
             # collect accuracy
-            model_scoring_data[path_paradigm.stem].append(accuracy)
+            model_accuracy_data[path_paradigm.stem].append(accuracy)
 
     # prepare and collect sub-dataframe
-    df_sub = pd.DataFrame(data=model_scoring_data)
+    df_sub = pd.DataFrame(data=model_accuracy_data)
     df_sub = df_sub[['model'] +
                     [col_name for col_name in sorted(df_sub.columns) if col_name != 'model']]  # sort columns
     df_sub['overall'] = df_sub.mean(axis=1)
@@ -128,4 +129,5 @@ for model_data in models_data:
 
     # save combined data frame
     df = pd.concat(sub_dfs, axis=0)
+    df = df.drop_duplicates()
     df.to_csv(configs.Dirs.results / f'{TEST_SUITE_NAME}.csv', index=False)

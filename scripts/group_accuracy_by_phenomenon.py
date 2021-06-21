@@ -34,8 +34,17 @@ for phenomenon, fns in phenomenon2fns.items():
 
 
 # print overall accuracy
+
+print()
+print('Mean overall accuracy across replications:')
 summary = df_phenomena.groupby(['model', 'corpora', 'scoring_method'])[phenomena].mean()
 summary['overall'] = summary.mean(axis=1)
 summary = summary.sort_values(axis=0, by='overall')['overall'].round(1)
+print(summary)
+
 print()
+print('Maximum overall accuracy across replications:')
+summary = df_phenomena.groupby(['model', 'corpora', 'scoring_method'])[phenomena].max()
+summary['overall'] = summary.mean(axis=1)
+summary = summary.sort_values(axis=0, by='overall')['overall'].round(1)
 print(summary)

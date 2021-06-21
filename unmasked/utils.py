@@ -1,6 +1,10 @@
 from typing import List
 
 
+def get_legend_label(model_name):
+    return model_name
+
+
 def calc_accuracy_from_scores(scores: List[float],
                               scoring_method: str,
                               ) -> float:
