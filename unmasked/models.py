@@ -1,13 +1,14 @@
 """
 Load all models. 
-There are three different models:
+There are three different classes of models:
 1. BabyBERTa trained with huggingface transformers by us. (loaded from a restricted remote drive)
-2. RoBERTa-base trained in fairseq by us.
-3. RoBERTa-base trained by others and loaded using huggingface transformers.
+2. RoBERTa-base trained in fairseq by us. (loaded via checkpoint files)
+3. RoBERTa-base trained by others. (loaded using huggingface transformers API)
 """
 
 import yaml
-from typing import List
+from pathlib import Path
+from typing import List, Optional
 from dataclasses import dataclass
 
 from fairseq.models.roberta import RobertaModel
@@ -30,6 +31,9 @@ class ModelData:
     case_sensitive: bool
     trained_on_lower_cased_data: bool
 
+    # specific to babyberta models (to trace each replication back to a unique location on the shared drive)
+    path: Optional[Path] = None
+
 
 def load_babyberta_models(param_numbers: List[int],
                           ) -> List[ModelData]:
@@ -51,6 +55,8 @@ def load_babyberta_models(param_numbers: List[int],
                 corpora = 'Wikipedia-1'
             elif param2val['corpora'] == ('aonewsela',):
                 corpora = 'AO-Newsela'
+            elif param2val['corpora'] == ('aochildes', 'aonewsela', 'wikipedia3'):
+                corpora = 'AO-CHILDES+AO-Newsela+Wikipedia-3'
             else:
                 raise NotImplementedError(param2val['corpora'])
             model = RobertaForMaskedLM.from_pretrained(str(path_to_babyberta))
@@ -65,6 +71,7 @@ def load_babyberta_models(param_numbers: List[int],
                                    tokenizer=tokenizer,
                                    case_sensitive=False,
                                    trained_on_lower_cased_data=True,
+                                   path=path_to_babyberta
                                    )
             res.append(model_data)
 

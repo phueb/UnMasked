@@ -8,6 +8,7 @@ from transformers.models.roberta import RobertaForMaskedLM, RobertaTokenizerFast
 
 from unmasked import configs
 
+
 def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
                                      tokenizer: RobertaTokenizerFast,
                                      path_paradigm: Path,
@@ -19,7 +20,7 @@ def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
 
     # load sentences
     sentences_ = path_paradigm.read_text().split('\n')
-    assert len(sentences_) % 2 == 0  # must be even
+    assert len(sentences_) % 2 == 0, len(sentences_)  # must be even
     assert sentences_[-1]
 
     # lowercase  (do this for fairseq models trained on custom lower-cased data)

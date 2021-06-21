@@ -32,9 +32,9 @@ from unmasked import configs
 from unmasked.utils import calc_accuracy_from_scores
 from unmasked.models import load_babyberta_models, load_roberta_base_models, ModelData
 
-BABYBERTA_PARAMS = [1, 2, 3]  # which BabyBerta models to load from shared drive with restricted access
-OVERWRITE = False  # set to True to remove existing scores and re-score
-TEST_SUITE_NAME = 'zorro'  # zorro or blimp
+BABYBERTA_PARAMS = [1, 2, 3, 7]  # which BabyBerta models to load from shared drive with restricted access
+OVERWRITE = True  # set to True to remove existing scores and re-score
+TEST_SUITE_NAME = ['zorro', 'blimp'][0]
 
 if TEST_SUITE_NAME == 'blimp':
     num_expected_scores = 2000
@@ -93,20 +93,22 @@ for model_data in models_data:
         model_accuracy_data['model'].append(model_data.name)
         model_accuracy_data['corpora'].append(model_data.corpora)
         model_accuracy_data['rep'].append(model_data.rep)
+        model_accuracy_data['path'].append(model_data.path)
         model_accuracy_data['scoring_method'].append(scoring_method)
 
         # should model be evaluated on lower-cased input?
         if model_data.case_sensitive and model_data.trained_on_lower_cased_data:
             lower_case = True
-            print('WARNING: Will score with lower-cased input.')
+            print('Will score with lower-cased input.')
         else:
+            print('Will not score with lower-cased input.')
             lower_case = False
 
         # for each paradigm in test suite
         for path_paradigm in (configs.Dirs.test_suites / TEST_SUITE_NAME).glob('*.txt'):
 
             # scoring
-            print(f"Scoring pairs in {path_paradigm.name:<60} with {model_data.name:<60} and method={scoring_method}")
+            print(f"Scoring {path_paradigm.name:<60} with {model_data.name + model_data.corpora:<40} and method={scoring_method}")
             scores = score_model_on_paradigm(model, tokenizer, path_paradigm, lower_case=lower_case)
 
             assert len(scores) == num_expected_scores
@@ -122,7 +124,6 @@ for model_data in models_data:
     df_sub = df_sub[['model'] +
                     [col_name for col_name in sorted(df_sub.columns) if col_name != 'model']]  # sort columns
     df_sub['overall'] = df_sub.mean(axis=1)
-    df_sub = df_sub.sort_values(axis=0, by='overall').round(2)
     sub_dfs.append(df_sub)
 
     print(df_sub[['model', 'corpora', 'rep', 'scoring_method', 'overall']])
@@ -130,4 +131,6 @@ for model_data in models_data:
     # save combined data frame
     df = pd.concat(sub_dfs, axis=0)
     df = df.drop_duplicates()
+    df = df.sort_values(axis=0, by='overall')
+    df = df.round(2)
     df.to_csv(configs.Dirs.results / f'{TEST_SUITE_NAME}.csv', index=False)

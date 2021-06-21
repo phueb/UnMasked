@@ -4,14 +4,14 @@ compare accuracy between models saved in local or remote runs folder, at one tim
 
 import pandas as pd
 
+from unmasked.utils import get_group_names
 from unmasked.visualizer import Visualizer, ParadigmData
 from unmasked.helpers import zorro_file_name2phenomenon
 from unmasked.helpers import blimp_file_name2phenomenon
 from unmasked import configs
 
-TEST_SUITE_NAME: str = ['zorro', 'blimp'][0]
+TEST_SUITE_NAME: str = ['zorro', 'blimp'][1]
 SCORING_METHOD: str = ['holistic', 'mlm'][0]
-AGGREGATION_METHOD: str = ['intermediate', 'best'][0]  # show accuracy for intermediate or best model  # TODO implement
 
 # load accuracy data
 df_path = configs.Dirs.results / f'{TEST_SUITE_NAME}.csv'
@@ -34,8 +34,7 @@ else:
 df = df[df['scoring_method'] == SCORING_METHOD]
 
 # group names
-df['group_name'] = df['model'].str.cat(df['corpora'], sep='+').astype('category')
-group_names = df['group_name'].unique().tolist()
+group_names = get_group_names(df)
 
 # collects and plots each ParadigmData instance in 1 multi-axis figure
 title = f'test suite={TEST_SUITE_NAME}\nscoring method={SCORING_METHOD}'
@@ -44,10 +43,7 @@ v = Visualizer(num_paradigms, group_names, title)
 # for all paradigms
 for fn, phenomenon in file_name2phenomenon.items():
 
-
-
-    # TODO get best or intermediate performing model
-
+    # for each group, get accuracies for each replication
     group_name2accuracies = {gn: df[df['group_name'] == gn][fn].values for gn in group_names}
     print(group_name2accuracies)
 

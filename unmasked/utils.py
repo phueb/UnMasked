@@ -1,5 +1,7 @@
 from typing import List
 
+import pandas as pd
+
 
 def get_legend_label(model_name):
     return model_name
@@ -28,3 +30,10 @@ def calc_accuracy_from_scores(scores: List[float],
             num_correct += 1
 
     return num_correct / num_pairs * 100
+
+
+def get_group_names(df: pd.DataFrame,
+                    ) -> List[str]:
+    df['group_name'] = df['model'].str.cat(df['corpora'], sep='+').astype('category')
+    res = df['group_name'].unique().tolist()
+    return res
