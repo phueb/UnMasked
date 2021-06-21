@@ -38,7 +38,8 @@ df['group_name'] = df['model'].str.cat(df['corpora'], sep='+').astype('category'
 group_names = df['group_name'].unique().tolist()
 
 # collects and plots each ParadigmData instance in 1 multi-axis figure
-v = Visualizer(num_paradigms, group_names)
+title = f'test suite={TEST_SUITE_NAME}\nscoring method={SCORING_METHOD}'
+v = Visualizer(num_paradigms, group_names, title)
 
 # for all paradigms
 for fn, phenomenon in file_name2phenomenon.items():

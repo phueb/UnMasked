@@ -10,7 +10,7 @@ class Dirs:
 
 
 class Scoring:
-    batch_size = 100
+    batch_size = 50  # needs to be small to probe roberta-base
 
 
 class Figs:

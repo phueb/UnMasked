@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
@@ -8,11 +8,15 @@ from scipy.stats import sem, t
 from unmasked import configs
 from unmasked.utils import get_legend_label
 
-SHOW_PARTIAL_FIGURE = True  # whether to show partially completed figure while making large figure
+SHOW_PARTIAL_FIGURE = False  # whether to show partially completed figure while making large figure
 
-MULTI_AXIS_LEG_NUM_COLS = 2  # 2 or 3 depending on space
-MULTI_AXIS_LEG_OFFSET = 0.12
-STANDALONE_LEG_OFFSET = 0.45
+MULTI_AXIS_LEG_NUM_COLS = 3
+STANDALONE_LEG_NUM_COLS = 2
+
+MULTI_AXIS_LEG_OFFSET = 0.14
+STANDALONE_LEG_OFFSET = 0.40
+
+MULTI_AXIS_FIG_SIZE = (6, 5)
 STANDALONE_FIG_SIZE = (4, 4)
 
 # lines figure
@@ -45,14 +49,16 @@ class Visualizer:
     def __init__(self,
                  num_paradigms: int,
                  group_names: List[str],
+                 title: str,
                  y_lims: Optional[List[float]] = None,
-                 fig_size: int = (6, 5),
+                 fig_size: int = MULTI_AXIS_FIG_SIZE,
                  dpi: int = 300,
                  show_partial_figure: bool = SHOW_PARTIAL_FIGURE,
                  confidence: float = 0.90,
                  ):
 
         self.group_names = group_names
+        self.title = title
         self.num_groups = len(group_names)
         self.labels = get_legend_label(group_names)
         self.y_lims = y_lims or [50, 101]
@@ -146,7 +152,7 @@ class Visualizer:
 
         # plot legend only once to prevent degradation in text quality due to multiple plotting
         if ax_id == 0:
-            self._plot_legend(offset_from_bottom=MULTI_AXIS_LEG_OFFSET+0.02)
+            self._plot_legend(offset_from_bottom=MULTI_AXIS_LEG_OFFSET+0.02, ncol=MULTI_AXIS_LEG_NUM_COLS)
 
         if self.show_partial_figure:
             self.fig.tight_layout()
@@ -168,7 +174,9 @@ class Visualizer:
         self._plot_boxplot_summary_standalone(ax1)
         ax2.axis('off')
         fig_standalone.subplots_adjust(top=0.1, bottom=0.01)
-        self._plot_legend(offset_from_bottom=STANDALONE_LEG_OFFSET + 0.02, fig=fig_standalone)
+        self._plot_legend(offset_from_bottom=STANDALONE_LEG_OFFSET + 0.02,
+                          ncol=STANDALONE_LEG_NUM_COLS,
+                          fig=fig_standalone)
 
         # show
         self.fig.show()
@@ -236,7 +244,8 @@ class Visualizer:
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
         ax.spines['top'].set_visible(False)
-        ax.set_xlim([0.0, 1.0])
+        ax.set_xlim([0.0, 100])
+        ax.set_title(self.title, fontsize=configs.Figs.title_font_size)
 
         # x axis
         x_ticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
@@ -280,6 +289,7 @@ class Visualizer:
 
     def _plot_legend(self,
                      offset_from_bottom: float,
+                     ncol: int,
                      fig: Optional[plt.Figure] = None,
                      ):
 
@@ -296,6 +306,6 @@ class Visualizer:
         fig.legend(handles=legend_elements,
                    loc='upper center',
                    bbox_to_anchor=(0.5, offset_from_bottom),
-                   ncol=3,
+                   ncol=ncol,
                    frameon=False,
                    fontsize=configs.Figs.leg_font_size)
