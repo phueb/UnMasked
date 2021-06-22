@@ -36,7 +36,7 @@ df['path'] = df['path'].apply(shorten_path)
 
 # print summary statistics
 summary = df.groupby(['model', 'corpora', 'scoring_method']).agg(
-    {'overall': ['min', 'max', 'mean']}).sort_values(axis=0, by=('overall', 'mean')).round(1)
+    {'overall': ['min', 'max', 'mean', 'count']}).sort_values(axis=0, by=('overall', 'mean')).round(1)
 print(summary)
 
 # group names

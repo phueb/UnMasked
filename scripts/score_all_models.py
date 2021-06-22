@@ -52,7 +52,7 @@ else:
 
 # load all models
 models_data = []
-# models_data.extend(load_babyberta_models(BABYBERTA_PARAMS))    # TODO
+models_data.extend(load_babyberta_models(BABYBERTA_PARAMS))
 models_data.extend(load_roberta_base_models())
 
 sub_dfs = [df_old]
