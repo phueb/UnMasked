@@ -33,7 +33,7 @@ from unmasked.utils import calc_accuracy_from_scores
 from unmasked.models import load_babyberta_models, load_roberta_base_models, ModelData
 
 BABYBERTA_PARAMS = [1, 2, 3, 7]  # which BabyBerta models to load from shared drive with restricted access
-OVERWRITE = True  # set to True to remove existing scores and re-score
+OVERWRITE = False  # set to True to remove existing scores and re-score
 TEST_SUITE_NAME = ['zorro', 'blimp'][0]
 
 if TEST_SUITE_NAME == 'blimp':
@@ -52,7 +52,7 @@ else:
 
 # load all models
 models_data = []
-models_data.extend(load_babyberta_models(BABYBERTA_PARAMS))
+# models_data.extend(load_babyberta_models(BABYBERTA_PARAMS))    # TODO
 models_data.extend(load_roberta_base_models())
 
 sub_dfs = [df_old]
@@ -62,25 +62,13 @@ for model_data in models_data:
     model = model_data.model
     tokenizer = model_data.tokenizer
 
-    # skip scoring if accuracies already exists in data frame
-    if not OVERWRITE and df_old.any(axis=None):
-        bool_id = (df_old['model'].str.contains(model_data.name)) & \
-              (df_old['corpora'].str.contains(model_data.corpora)) & \
-              (df_old['rep'] == model_data.rep)
-        if df_old[bool_id].any(axis=None):
-            print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
-            continue
-
     print()
 
     model.eval()
     model.cuda(0)
 
-    # init data for data-frame
-    model_accuracy_data = defaultdict(list)
-
-    # for each scoring method
-    for scoring_method in ['mlm', 'holistic']:
+    # each iteration in this "for" loop produces 1 row in the data-frame
+    for scoring_method in ['holistic', 'mlm']:
 
         if scoring_method == 'mlm':
             score_model_on_paradigm = mlm_score_model_on_paradigm
@@ -89,7 +77,19 @@ for model_data in models_data:
         else:
             raise AttributeError('Invalid scoring_method.')
 
+        # skip scoring if row exists in data frame
+        if not OVERWRITE and df_old.any(axis=None):
+            bool_id = (df_old['model'].str.contains(model_data.name)) & \
+                      (df_old['corpora'].str.contains(model_data.corpora)) & \
+                      (df_old['rep'] == model_data.rep) & \
+                      (df_old['path'].str.contains(model_data.path)) & \
+                      (df_old['scoring_method'].str.contains(scoring_method))
+            if df_old[bool_id].any(axis=None):
+                print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
+                continue
+
         # collect model scoring data
+        model_accuracy_data = defaultdict(list)
         model_accuracy_data['model'].append(model_data.name)
         model_accuracy_data['corpora'].append(model_data.corpora)
         model_accuracy_data['rep'].append(model_data.rep)
@@ -105,6 +105,7 @@ for model_data in models_data:
             lower_case = False
 
         # for each paradigm in test suite
+        col_names_with_acc = []
         for path_paradigm in (configs.Dirs.test_suites / TEST_SUITE_NAME).glob('*.txt'):
 
             # scoring
@@ -116,21 +117,21 @@ for model_data in models_data:
             # compute accuracy
             accuracy = calc_accuracy_from_scores(scores, scoring_method)
 
-            # collect accuracy
+            # collect
             model_accuracy_data[path_paradigm.stem].append(accuracy)
+            col_names_with_acc.append(path_paradigm.stem)
 
-    # prepare and collect sub-dataframe
-    df_sub = pd.DataFrame(data=model_accuracy_data)
-    df_sub = df_sub[['model'] +
-                    [col_name for col_name in sorted(df_sub.columns) if col_name != 'model']]  # sort columns
-    df_sub['overall'] = df_sub.mean(axis=1)
-    sub_dfs.append(df_sub)
+        # prepare and collect sub-dataframe
+        df_sub = pd.DataFrame(data=model_accuracy_data)
+        df_sub = df_sub[['model', 'corpora', 'rep', 'path', 'scoring_method'] + col_names_with_acc]  # sort columns
+        df_sub['overall'] = df_sub[col_names_with_acc].mean(axis=1)
+        sub_dfs.append(df_sub)
 
-    print(df_sub[['model', 'corpora', 'rep', 'scoring_method', 'overall']])
+        print(df_sub[['model', 'corpora', 'rep', 'scoring_method', 'overall']])
 
-    # save combined data frame
-    df = pd.concat(sub_dfs, axis=0)
-    df = df.drop_duplicates()
-    df = df.sort_values(axis=0, by='overall')
-    df = df.round(2)
-    df.to_csv(configs.Dirs.results / f'{TEST_SUITE_NAME}.csv', index=False)
+        # save combined data frame
+        df = pd.concat(sub_dfs, axis=0, sort=True)
+        df = df.drop_duplicates(subset=['model', 'corpora', 'rep', 'path', 'scoring_method'])
+        df = df.sort_values(axis=0, by='overall')
+        df = df.round(2)
+        df.to_csv(configs.Dirs.results / f'{TEST_SUITE_NAME}.csv', index=False)

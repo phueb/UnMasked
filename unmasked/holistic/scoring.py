@@ -37,10 +37,14 @@ def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
         for start in range(0, len(sentences), configs.Scoring.batch_size):
             # batch sentences
             end = min(len(sentences), start + configs.Scoring.batch_size)
-            x = tokenizer.batch_encode_plus(sentences[start:end],
-                                            padding='longest',
-                                            max_length=512,
-                                            return_tensors='pt')
+            x = tokenizer(sentences[start:end],
+                          padding='longest',
+                          max_length=128,
+                          return_tensors='pt')
+
+            # dev notes:
+            # this tokenizer works as expected: special tokens, punctuation, attention mask, tokenization.
+            # cross-entropies for roberta-base are the same as those produced by BabyBERta probing logic
 
             # get loss
             output = model(**{k: v.to('cuda') for k, v in x.items()})

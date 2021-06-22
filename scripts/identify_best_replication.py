@@ -3,6 +3,8 @@ Find best-performing model among replications (models trained in the same condit
 """
 
 import pandas as pd
+from typing import Union
+from pathlib import Path
 
 from unmasked import configs
 from unmasked.utils import get_group_names
@@ -16,9 +18,25 @@ else:
     raise OSError(f'Did not find {df_path}')
 
 
+pd.options.display.max_columns = None
+pd.options.display.width = None
+
+
+def shorten_path(p: Union[None, Path]):
+    if not Path(p).exists():
+        return p
+    elif Path(p).name.startswith('checkpoint'):  # fairseq model
+        return Path(p).relative_to(configs.Dirs.fairseq_models)
+    else:
+        return Path(p).relative_to(configs.Dirs.babyberta_runs)
+
+
+df['path'] = df['path'].apply(shorten_path)
+
+
 # print summary statistics
 summary = df.groupby(['model', 'corpora', 'scoring_method']).agg(
-    {'overall': ['min', 'max', 'median']}).sort_values(axis=0, by=('overall', 'median')).round(1)
+    {'overall': ['min', 'max', 'mean']}).sort_values(axis=0, by=('overall', 'mean')).round(1)
 print(summary)
 
 # group names
@@ -28,8 +46,12 @@ group_names = get_group_names(df)  # this creates "group_name" column in df
 for group_name, grouped in df.groupby(['group_name']):
     print()
     print(group_name)
-    cols = ['rep', 'scoring_method', 'overall']
-    group_summary = grouped[cols].pivot(index='rep', columns='scoring_method', values='overall')
+    if group_name.startswith('BabyBERTa'):
+        index_name = 'path'  # only BabyBERTa has path
+    else:
+        index_name = 'rep'
+    cols = [index_name, 'scoring_method', 'overall']
+    group_summary = grouped[cols].pivot(index=index_name, columns='scoring_method', values='overall')
     print(group_summary.sort_values(axis=0, by='holistic'))
 
     # TODO identify best param_name for BabyBERTa
