@@ -54,4 +54,3 @@ for group_name, grouped in df.groupby(['group_name']):
     group_summary = grouped[cols].pivot(index=index_name, columns='scoring_method', values='overall')
     print(group_summary.sort_values(axis=0, by='holistic'))
 
-    # TODO identify best param_name for BabyBERTa

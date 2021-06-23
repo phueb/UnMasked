@@ -25,6 +25,7 @@ RoBERTa-base+30B                 91.13 (up)
 """
 import pandas as pd
 from collections import defaultdict
+import torch
 
 from unmasked.mlm.scoring import mlm_score_model_on_paradigm
 from unmasked.holistic.scoring import holistic_score_model_on_paradigm
@@ -34,7 +35,7 @@ from unmasked.models import load_babyberta_models, load_roberta_base_models, Mod
 
 BABYBERTA_PARAMS = [1, 2, 3, 7]  # which BabyBerta models to load from shared drive with restricted access
 OVERWRITE = False  # set to True to remove existing scores and re-score
-TEST_SUITE_NAME = ['zorro', 'blimp'][0]
+TEST_SUITE_NAME = ['zorro', 'blimp'][1]
 
 if TEST_SUITE_NAME == 'blimp':
     num_expected_scores = 2000
@@ -59,10 +60,6 @@ sub_dfs = [df_old]
 for model_data in models_data:
 
     model_data: ModelData
-
-    # call the function that loads the model and tokenizer
-    model = model_data.model()
-    tokenizer = model_data.tokenizer()
 
     print()
 
@@ -103,6 +100,10 @@ for model_data in models_data:
             print('Will not score with lower-cased input.')
             lower_case = False
 
+        # call the function that loads the model and tokenizer
+        model = model_data.model()
+        tokenizer = model_data.tokenizer()
+
         model.eval()
         model.cuda(0)
 
@@ -122,6 +123,10 @@ for model_data in models_data:
             # collect
             model_accuracy_data[path_paradigm.stem].append(accuracy)
             col_names_with_acc.append(path_paradigm.stem)
+
+        # clear gpu memory
+        del model
+        torch.cuda.empty_cache()
 
         # prepare and collect sub-dataframe
         df_sub = pd.DataFrame(data=model_accuracy_data)
