@@ -9,7 +9,7 @@ from pathlib import Path
 from unmasked import configs
 from unmasked.utils import get_group_names
 
-TEST_SUITE_NAME = ['zorro', 'blimp'][0]  # zorro or blimp
+TEST_SUITE_NAME = ['zorro', 'blimp'][1]  # zorro or blimp
 
 df_path = configs.Dirs.results / f'{TEST_SUITE_NAME}.csv'
 if df_path.exists():
