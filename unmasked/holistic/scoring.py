@@ -31,8 +31,9 @@ def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
 
     # compute scores
     cross_entropies = []
-    loss_fct = CrossEntropyLoss(reduction='none')
     with torch.no_grad():
+
+        loss_fct = CrossEntropyLoss(reduction='none')
 
         for start in range(0, len(sentences), configs.Scoring.batch_size):
             # batch sentences

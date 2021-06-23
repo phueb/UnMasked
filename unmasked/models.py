@@ -4,11 +4,16 @@ There are three different classes of models:
 1. BabyBERTa trained with huggingface transformers by us. (loaded from a restricted remote drive)
 2. RoBERTa-base trained in fairseq by us. (loaded via checkpoint files)
 3. RoBERTa-base trained by others. (loaded using huggingface transformers API)
+
+Notes:
+    - We do not load all models at once - this wastes CUDA memory.
+    Instead we specify directions for how load each model using functools.partial.
 """
 
 import yaml
 from typing import List
 from dataclasses import dataclass
+from functools import partial
 
 from fairseq.models.roberta import RobertaModel
 from transformers.models.roberta import RobertaForMaskedLM, RobertaTokenizerFast
@@ -23,8 +28,8 @@ class ModelData:
     name: str
     corpora: str
     rep: int
-    model: RobertaForMaskedLM
-    tokenizer: RobertaTokenizerFast
+    model: partial
+    tokenizer: partial
     path: str
 
     # use these two attributes to decide if to evaluate model on lower-cased test sentences
@@ -60,15 +65,15 @@ def load_babyberta_models(param_numbers: List[int],
                 corpora = 'AO-CHILDES+AO-Newsela+Wikipedia-3'
             else:
                 raise NotImplementedError(param2val['corpora'])
-            model = RobertaForMaskedLM.from_pretrained(str(path_to_babyberta))
-            tokenizer = RobertaTokenizerFast.from_pretrained(str(path_to_babyberta),
-                                                             add_prefix_space=True,  # this must be added
-                                                             )
+
             model_data = ModelData(name='BabyBERTa',
                                    corpora=corpora,
                                    rep=rep,
-                                   model=model,
-                                   tokenizer=tokenizer,
+                                   model=partial(RobertaForMaskedLM.from_pretrained,
+                                                 pretrained_model_name_or_path=str(path_to_babyberta)),
+                                   tokenizer=partial(RobertaTokenizerFast.from_pretrained,
+                                                     pretrained_model_name_or_path=str(path_to_babyberta),
+                                                     add_prefix_space=True),
                                    case_sensitive=False,
                                    trained_on_lower_cased_data=True,
                                    path=str(path_to_babyberta)
@@ -80,6 +85,16 @@ def load_babyberta_models(param_numbers: List[int],
 
 def load_fairseq_as_huggingface_models() -> List[ModelData]:
     """load Roberta-base models pre-trained by us, and convert to huggingface Roberta """
+
+    def loading_function(path_model_data_,
+                         bin_name_,
+                         checkpoint_path_,
+                         ) -> RobertaForMaskedLM:
+        model_fairseq = RobertaModel.from_pretrained(model_name_or_path=str(path_model_data_),
+                                                     checkpoint_file=str(path_model_data_ / checkpoint_path_.name),
+                                                     data_name_or_path=str(path_model_data_ / bin_name_),
+                                                     )
+        return convert_fairseq_roberta_to_pytorch(model_fairseq)
 
     res = []
     for path_model_data in configs.Dirs.fairseq_models.glob('*'):
@@ -94,19 +109,18 @@ def load_fairseq_as_huggingface_models() -> List[ModelData]:
             else:
                 raise AttributeError('Invalid model name.')
 
-            model_fairseq = RobertaModel.from_pretrained(model_name_or_path=str(path_model_data),
-                                                         checkpoint_file=str(path_model_data / checkpoint_path.name),
-                                                         data_name_or_path=str(path_model_data / bin_name),
-                                                         )
-            model, tokenizer = convert_fairseq_roberta_to_pytorch(model_fairseq)
-
             # collect
             rep = checkpoint_path.stem[-1]
             model_data = ModelData(name='RoBERTa-base',
                                    corpora=corpora,
                                    rep=int(rep),
-                                   model=model,
-                                   tokenizer=tokenizer,
+                                   model=partial(loading_function,
+                                                 path_model_data_=path_model_data,
+                                                 bin_name_=bin_name,
+                                                 checkpoint_path_=checkpoint_path
+                                                 ),
+                                   tokenizer=partial(RobertaTokenizerFast.from_pretrained,
+                                                     pretrained_model_name_or_path='roberta-base'),
                                    case_sensitive=True,
                                    trained_on_lower_cased_data=True,
                                    path=str(checkpoint_path),
@@ -123,8 +137,10 @@ def load_roberta_base_models():
         ModelData(name='RoBERTa-base',
                   corpora='Warstadt2020',
                   rep=0,
-                  model=AutoModelForMaskedLM.from_pretrained("nyu-mll/roberta-base-10M-1"),
-                  tokenizer=AutoTokenizer.from_pretrained("nyu-mll/roberta-base-10M-1"),
+                  model=partial(AutoModelForMaskedLM.from_pretrained,
+                                pretrained_model_name_or_path="nyu-mll/roberta-base-10M-1"),
+                  tokenizer=partial(AutoTokenizer.from_pretrained,
+                                    pretrained_model_name_or_path="nyu-mll/roberta-base-10M-1"),
                   case_sensitive=True,
                   trained_on_lower_cased_data=False,
                   path="nyu-mll/roberta-base-10M-1",
@@ -132,8 +148,10 @@ def load_roberta_base_models():
         ModelData(name='RoBERTa-base',
                   corpora='Warstadt2020',
                   rep=1,
-                  model=AutoModelForMaskedLM.from_pretrained("nyu-mll/roberta-base-10M-2"),
-                  tokenizer=AutoTokenizer.from_pretrained("nyu-mll/roberta-base-10M-2"),
+                  model=partial(AutoModelForMaskedLM.from_pretrained,
+                                pretrained_model_name_or_path="nyu-mll/roberta-base-10M-2"),
+                  tokenizer=partial(AutoTokenizer.from_pretrained,
+                                    pretrained_model_name_or_path="nyu-mll/roberta-base-10M-2"),
                   case_sensitive=True,
                   trained_on_lower_cased_data=False,
                   path="nyu-mll/roberta-base-10M-2",
@@ -141,8 +159,10 @@ def load_roberta_base_models():
         ModelData(name='RoBERTa-base',
                   corpora='Warstadt2020',
                   rep=2,
-                  model=AutoModelForMaskedLM.from_pretrained("nyu-mll/roberta-base-10M-3"),
-                  tokenizer=AutoTokenizer.from_pretrained("nyu-mll/roberta-base-10M-3"),
+                  model=partial(AutoModelForMaskedLM.from_pretrained,
+                                pretrained_model_name_or_path="nyu-mll/roberta-base-10M-3"),
+                  tokenizer=partial(AutoTokenizer.from_pretrained,
+                                    pretrained_model_name_or_path="nyu-mll/roberta-base-10M-3"),
                   case_sensitive=True,
                   trained_on_lower_cased_data=False,
                   path="nyu-mll/roberta-base-10M-3",
@@ -150,12 +170,14 @@ def load_roberta_base_models():
         ModelData(name='RoBERTa-base',
                   corpora='Liu2019',
                   rep=0,
-                  model=RobertaForMaskedLM.from_pretrained('roberta-base'),
-                  tokenizer=RobertaTokenizerFast.from_pretrained('roberta-base'),
+                  model=partial(RobertaForMaskedLM.from_pretrained,
+                                pretrained_model_name_or_path='roberta-base'),
+                  tokenizer=partial(RobertaTokenizerFast.from_pretrained,
+                                    pretrained_model_name_or_path='roberta-base'),
                   case_sensitive=True,
                   trained_on_lower_cased_data=False,
-                  path='roberta-base',
-                  )]
+                  path='roberta-base'),
+    ]
 
     # trained by us using fairseq - need to be converted
     fairseq_models = load_fairseq_as_huggingface_models()

@@ -52,20 +52,19 @@ else:
 
 # load all models
 models_data = []
-models_data.extend(load_babyberta_models(BABYBERTA_PARAMS))
 models_data.extend(load_roberta_base_models())
+models_data.extend(load_babyberta_models(BABYBERTA_PARAMS))
 
 sub_dfs = [df_old]
 for model_data in models_data:
 
     model_data: ModelData
-    model = model_data.model
-    tokenizer = model_data.tokenizer
+
+    # call the function that loads the model and tokenizer
+    model = model_data.model()
+    tokenizer = model_data.tokenizer()
 
     print()
-
-    model.eval()
-    model.cuda(0)
 
     # each iteration in this "for" loop produces 1 row in the data-frame
     for scoring_method in ['holistic', 'mlm']:
@@ -103,6 +102,9 @@ for model_data in models_data:
         else:
             print('Will not score with lower-cased input.')
             lower_case = False
+
+        model.eval()
+        model.cuda(0)
 
         # for each paradigm in test suite
         col_names_with_acc = []

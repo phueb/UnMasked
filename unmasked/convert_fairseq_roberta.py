@@ -47,7 +47,7 @@ SAMPLE_TEXT = "Hello world! cécé herlolip"
 def convert_fairseq_roberta_to_pytorch(
         roberta: FairseqRobertaModel,
         classification_head: bool = None,
-) -> Tuple[RobertaForMaskedLM, RobertaTokenizerFast]:
+) -> RobertaForMaskedLM:
     """
     Copy/paste/tweak roberta's weights to our BERT structure.
     """
@@ -153,6 +153,4 @@ def convert_fairseq_roberta_to_pytorch(
     if not success:
         raise Exception("Something went wRoNg")
 
-    tokenizer = RobertaTokenizerFast.from_pretrained('roberta-base')
-
-    return model, tokenizer
+    return model
