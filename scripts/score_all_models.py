@@ -33,9 +33,9 @@ from unmasked import configs
 from unmasked.utils import calc_accuracy_from_scores
 from unmasked.models import load_babyberta_models, load_roberta_base_models, ModelData
 
-BABYBERTA_PARAMS = [1, 2, 3, 7]  # which BabyBerta models to load from shared drive with restricted access
+BABYBERTA_PARAMS = [16, 17] + [12, 13] + [14, 15] + [1, 2, 3, 7]  # which BabyBerta models to load from shared drive
 OVERWRITE = False  # set to True to remove existing scores and re-score
-TEST_SUITE_NAME = ['zorro', 'blimp'][1]
+TEST_SUITE_NAME = ['zorro', 'blimp'][0]
 
 if TEST_SUITE_NAME == 'blimp':
     num_expected_scores = 2000
@@ -84,6 +84,12 @@ for model_data in models_data:
                 print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
                 continue
 
+        # TODO duplicate rows will happen when this script is run once and then again after more BabyBERTa replications
+        #  are added to a folder which was previously searched, because the variable "rep" will be assigned differently
+        #  to an already evaluated model
+
+        print(f'Scoring  {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
+
         # collect model scoring data
         model_accuracy_data = defaultdict(list)
         model_accuracy_data['model'].append(model_data.name)
@@ -112,7 +118,7 @@ for model_data in models_data:
         for path_paradigm in (configs.Dirs.test_suites / TEST_SUITE_NAME).glob('*.txt'):
 
             # scoring
-            print(f"Scoring {path_paradigm.name:<60} with {model_data.name + model_data.corpora:<40} and method={scoring_method}")
+            print(f"Scoring {path_paradigm.name:<60} with {model_data.name:<40} trained on {model_data.corpora:<40} and method={scoring_method}")
             scores = score_model_on_paradigm(model, tokenizer, path_paradigm, lower_case=lower_case)
 
             assert len(scores) == num_expected_scores

@@ -17,7 +17,7 @@ MULTI_AXIS_LEG_OFFSET = 0.14
 STANDALONE_LEG_OFFSET = 0.40
 
 MULTI_AXIS_FIG_SIZE = (6, 5)
-STANDALONE_FIG_SIZE = (4, 4)
+STANDALONE_FIG_SIZE = (6, 5)
 
 # lines figure
 Y_TICK_LABEL_FONTSIZE = 5
@@ -222,7 +222,7 @@ class Visualizer:
             accuracies = np.array([pd.group_name2accuracies[group_name].mean().item() for pd in self.pds])
             y = accuracies.mean()
 
-            # margin of error
+            # margin of error (across paradigms, not replications)
             n = len(accuracies)
             h = sem(accuracies, axis=0) * t.ppf((1 + self.confidence) / 2, n - 1)  # margin of error
 

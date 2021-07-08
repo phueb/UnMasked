@@ -55,14 +55,42 @@ def load_babyberta_models(param_numbers: List[int],
         for rep, path_to_babyberta in enumerate(sorted((configs.Dirs.babyberta_runs / param_name).glob('**/saves/'))):
             with (configs.Dirs.babyberta_runs / param_name / 'param2val.yaml').open('r') as f:
                 param2val = yaml.load(f, Loader=yaml.FullLoader)
+
             if param2val['corpora'] == ('aochildes',):
                 corpora = 'AO-CHILDES'
+
             elif param2val['corpora'] == ('wikipedia1',):
                 corpora = 'Wikipedia-1'
+
             elif param2val['corpora'] == ('aonewsela',):
                 corpora = 'AO-Newsela'
+
             elif param2val['corpora'] == ('aochildes', 'aonewsela', 'wikipedia3'):
                 corpora = 'AO-CHILDES+AO-Newsela+Wikipedia-3'
+
+            elif param2val['corpora'] == ('aochildes', 'wikipedia3'):
+                if param2val['training_order'] == 'original' and param2val['consecutive_masking'] is True:
+                    corpora = 'AO-CHILDES+Wikipedia-3 original'
+                elif param2val['training_order'] == 'reversed' and param2val['consecutive_masking'] is True:
+                    corpora = 'AO-CHILDES+Wikipedia-3 reversed'
+                else:
+                    raise NotImplementedError
+
+            elif param2val['corpora'] == ('aochildes', 'aonewsela'):
+                if param2val['training_order'] == 'original' and param2val['consecutive_masking'] is True:
+                    corpora = 'AO-CHILDES+AO-Newsela original'
+                elif param2val['training_order'] == 'reversed' and param2val['consecutive_masking'] is True:
+                    corpora = 'AO-CHILDES+AO-Newsela reversed'
+                else:
+                    raise NotImplementedError
+
+            elif param2val['corpora'] == ('wikipedia3', 'aonewsela'):
+                if param2val['training_order'] == 'original' and param2val['consecutive_masking'] is True:
+                    corpora = 'Wikipedia-3+AO-Newsela original'
+                elif param2val['training_order'] == 'reversed' and param2val['consecutive_masking'] is True:
+                    corpora = 'Wikipedia-3+AO-Newsela reversed'
+                else:
+                    raise NotImplementedError
             else:
                 raise NotImplementedError(param2val['corpora'])
 

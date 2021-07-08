@@ -3,6 +3,8 @@ compare accuracy between models saved in local or remote runs folder, at one tim
 """
 
 import pandas as pd
+import numpy as np
+from scipy.stats import sem, t
 
 from unmasked.utils import get_group_names
 from unmasked.visualizer import Visualizer, ParadigmData
@@ -10,7 +12,7 @@ from unmasked.helpers import zorro_file_name2phenomenon
 from unmasked.helpers import blimp_file_name2phenomenon
 from unmasked import configs
 
-TEST_SUITE_NAME: str = ['zorro', 'blimp'][1]
+TEST_SUITE_NAME: str = ['zorro', 'blimp'][0]
 SCORING_METHOD: str = ['holistic', 'mlm'][0]
 
 # load accuracy data
@@ -59,3 +61,15 @@ for fn, phenomenon in file_name2phenomenon.items():
     v.update(pd)
 
 v.plot_summary()
+
+# print summary
+print()
+print(f'Average accuracies on test_suite={TEST_SUITE_NAME} and with scoring_method={SCORING_METHOD}')
+for group_name in group_names:
+    acc_mat = np.array([pd.group_name2accuracies[group_name] for pd in v.pds])  # (num paradigms, num reps)
+    accuracies_by_rep = acc_mat.mean(axis=0)  # (num reps)
+    # margin of error (across replications)
+    n = len(accuracies_by_rep)
+    h = sem(accuracies_by_rep, axis=0) * t.ppf((1 + v.confidence) / 2, n - 1) if n > 1 else np.nan
+    print(f'{group_name:.<64}accuracy={accuracies_by_rep.mean().item():.2f} n={n:>2} margin-of-error={h:>8.2f}')
+
