@@ -1,27 +1,6 @@
 """
 Use both MLM and holistic scoring methods to evaluate models on BLiMP or Zorro.
 
-WITHOUT capitalization of proper nouns, average accuracies on zorro:
-RoBERTa-baseAO-CHILDES           73.64
-BabyBERTa+Wikipedia-1            73.82
-BabyBERTa+AO-CHILDES+50Kvocab    77.11
-BabyBERTa+AO-Newsela             77.31
-RoBERTa-base+10M                 78.47
-BabyBERTa+AO-CHILDES             78.93
-RoBERTa-base+Wikipedia-1         79.78
-BabyBERTa+concatenated           86.5
-RoBERTa-base+30B                 90.63
-
-WITH capitalization of proper nouns, average accuracies on zorro:
-RoBERTa-baseAO-CHILDES           72.24 (down because proper nouns are lower-cased in training data  and tokenizer does not lower case during eval)
-BabyBERTa+Wikipedia-1            73.82 (same)
-BabyBERTa+AO-CHILDES+50Kvocab    75.82 (down)
-BabyBERTa+AO-Newsela             77.31 (same)
-RoBERTa-base+Wikipedia-1         78.25 (down because proper nouns are lower-cased in training data and tokenizer does not lower case during eval)
-BabyBERTa+AO-CHILDES             78.93 (same)
-RoBERTa-base+10M                 79.55 (up)
-BabyBERTa+concatenated           86.5  (same)
-RoBERTa-base+30B                 91.13 (up)
 """
 import numpy as np
 from transformers import AutoTokenizer, AutoModelForMaskedLM
@@ -31,7 +10,7 @@ from unmasked.holistic.scoring import holistic_score_model_on_paradigm
 from unmasked import configs
 from unmasked.utils import calc_accuracy_from_scores
 
-MODEL_REPO = "phueb/BabyBERTa"
+MODEL_REPO = "phueb/BabyBERTa"  # name of huggingface model hub repository
 LOWER_CASE = True  # should model be evaluated on lower-cased input?
 TEST_SUITE_NAME = ['zorro', 'blimp'][0]
 
