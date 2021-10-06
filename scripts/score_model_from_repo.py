@@ -33,7 +33,9 @@ for scoring_method in ['holistic', 'mlm']:
         raise AttributeError('Invalid scoring_method.')
 
     # load from repo
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO,
+                                              add_prefix_space=True,  # this must be True for BabyBERTa
+                                              )
     model = AutoModelForMaskedLM.from_pretrained(MODEL_REPO)
 
     model.eval()
