@@ -10,7 +10,7 @@ from unmasked.holistic.scoring import holistic_score_model_on_paradigm
 from unmasked import configs
 from unmasked.utils import calc_accuracy_from_scores
 
-MODEL_REPO = "phueb/BabyBERTa"  # name of huggingface model hub repository
+MODEL_REPO = "phueb/BabyBERTa-1"  # name of huggingface model hub repository
 LOWER_CASE = True  # should model be evaluated on lower-cased input?
 TEST_SUITE_NAME = ['zorro', 'blimp'][0]
 
