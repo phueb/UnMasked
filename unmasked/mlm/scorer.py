@@ -317,6 +317,13 @@ class MLMScorerPT(BaseScorer):
                         alen = torch.arange(token_ids.shape[1], dtype=torch.long)
                         alen = alen.to(ctx)
                         mask = alen < valid_length[:, None]
+
+                        print(token_ids[0])
+                        print(mask[0])
+                        print(self.mask_token_id)
+                        raise SystemExit
+
+
                         out = self._model(input_ids=token_ids, attention_mask=mask)
                         # out[0] is what contains the distribution for the masked (batch_size, sequence_length, config.vocab_size)
                         # Reindex to only get the distributions at the masked positions (batch_size, config.vocab_size)

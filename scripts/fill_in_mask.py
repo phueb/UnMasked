@@ -1,7 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 import torch
 
-MODEL_REPO = "phueb/BabyBERTa-1"  # name of huggingface model hub repository
+MODEL_REPO = "phueb/BabyBERTa-2"  # name of huggingface model hub repository
 
 # load from repo
 tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO,
@@ -12,7 +12,7 @@ model = AutoModelForMaskedLM.from_pretrained(MODEL_REPO)
 model.eval()
 model.cuda(0)
 
-SENTENCE = 'what does this <mask> say ?'
+SENTENCE = 'what does this <mask> do ?'
 
 
 def print_predictions(sent):
@@ -20,17 +20,15 @@ def print_predictions(sent):
 
     with torch.no_grad():
         output = model(**{k: v.to('cuda') for k, v in x.items()})
-    last_hidden_state = output['logits'].squeeze()
+    logits = output['logits'].squeeze()
 
-    list_of_list = []
     for pos, input_id in enumerate(x['input_ids'].squeeze()):
-        mask_hidden_state = last_hidden_state[pos]
-        idx = torch.topk(mask_hidden_state, k=5, dim=0)[1]
-        words = [tokenizer.decode(i.item()).strip() for i in idx]
-        list_of_list.append(words)
-        print(tokenizer.decode(input_id))
-        print("Guesses : ", words)
-        print()
+        logits_for_token = logits[pos]
+        idx = torch.topk(logits_for_token, k=5, dim=0)[1]
+        predictions = [f'{tokenizer.decode(i.item()).strip():<16}' for i in idx]
+        input_token = tokenizer.decode(input_id)
+        print(f'{input_token:<16} {predictions}')
 
 
 print_predictions(SENTENCE)
+

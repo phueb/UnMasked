@@ -23,7 +23,7 @@ else:
 
 
 # each iteration in this "for" loop produces 1 row in the data-frame
-for scoring_method in ['holistic', 'mlm']:
+for scoring_method in ['mlm', 'holistic']:
 
     if scoring_method == 'mlm':
         score_model_on_paradigm = mlm_score_model_on_paradigm
