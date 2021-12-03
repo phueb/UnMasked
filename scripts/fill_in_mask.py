@@ -2,9 +2,8 @@
 """
 When using BabyBERTa to fill-in masked tokens, the automated pipeline by huggingface produces incorrect results.
 The tokenizer that babyberta uses treats the space before the <mask> as a token, and the <mask> as another token.
-This probably has something to do with add_prefix_space=True.
-(I set add_prefix_space=True because babyberta is supposed to be a model of spoken language which does not distinguish
- between title-cased and non-title-cased words.)
+This probably has something to do with stripping settings in the tokenizer.
+
 At any rate, the predictions for the masked word are output by babyberta at the space token,
  the token that is before the mask symbol. The predictions at this position look good.
 For example, below are the top 5 outputs for each token in the sentence "what does this <mask> do?".
