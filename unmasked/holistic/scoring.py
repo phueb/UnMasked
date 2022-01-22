@@ -13,7 +13,7 @@ def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
                                      tokenizer: RobertaTokenizerFast,
                                      path_paradigm: Path,
                                      lower_case: bool = False,  # necessary for Roberta-base trained on lower-cased data
-                                     verbose: bool = True,
+                                     verbose: bool = False,
                                      ) -> List[float]:
     """
     probe a model on a single paradigm.
@@ -59,11 +59,9 @@ def holistic_score_model_on_paradigm(model: RobertaForMaskedLM,
 
             if verbose:
                 predicted_ids = np.argmax(logits_3d.detach().cpu().numpy(), axis=2)
-                print(predicted_ids)
                 for row, xi, att in zip(predicted_ids, x['input_ids'], x['attention_mask']):
-                    print([f'{t:<16}' for t in tokenizer.convert_ids_to_tokens(xi)][:sum(att)])
-                    print([f'{t:<16}' for t in tokenizer.convert_ids_to_tokens(row)][:sum(att)])
-                raise SystemExit
+                    print([f'{t:<12}' for t in tokenizer.convert_ids_to_tokens(xi)][:sum(att)])
+                    print([f'{t:<12}' for t in tokenizer.convert_ids_to_tokens(row)][:sum(att)])
 
             # compute avg cross entropy per sentence
             # to do so, we must exclude loss for padding symbols, using attention_mask
