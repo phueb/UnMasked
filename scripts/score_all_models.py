@@ -1,8 +1,8 @@
 """
 Use both MLM and holistic scoring methods to evaluate models on BLiMP or Zorro.
 
-WITHOUT capitalization of proper nouns, average accuracies on zorro:
-RoBERTa-baseAO-CHILDES           73.64
+WITHOUT capitalization of proper nouns, average accuracies on zorro with MLM scoring:
+RoBERTa-base+AO-CHILDES          73.64
 BabyBERTa+Wikipedia-1            73.82
 BabyBERTa+AO-CHILDES+50Kvocab    77.11
 BabyBERTa+AO-Newsela             77.31
@@ -12,8 +12,8 @@ RoBERTa-base+Wikipedia-1         79.78
 BabyBERTa+concatenated           86.5
 RoBERTa-base+30B                 90.63
 
-WITH capitalization of proper nouns, average accuracies on zorro:
-RoBERTa-baseAO-CHILDES           72.24 (down because proper nouns are lower-cased in training data  and tokenizer does not lower case during eval)
+WITH capitalization of proper nouns, average accuracies on zorro with MLM scoring:
+RoBERTa-base+AO-CHILDES          72.24 (down because proper nouns are lower-cased in training data  and tokenizer does not lower case during eval)
 BabyBERTa+Wikipedia-1            73.82 (same)
 BabyBERTa+AO-CHILDES+50Kvocab    75.82 (down)
 BabyBERTa+AO-Newsela             77.31 (same)
@@ -74,15 +74,15 @@ for model_data in models_data:
             raise AttributeError('Invalid scoring_method.')
 
         # skip scoring if row exists in data frame
-        if not OVERWRITE and df_old.any(axis=None):
-            bool_id = (df_old['model'].str.contains(model_data.name)) & \
-                      (df_old['corpora'].str.contains(model_data.corpora)) & \
-                      (df_old['rep'] == model_data.rep) & \
-                      (df_old['path'].str.contains(model_data.path)) & \
-                      (df_old['scoring_method'].str.contains(scoring_method))
-            if df_old[bool_id].any(axis=None):
-                print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
-                continue
+        # if not OVERWRITE and df_old.any(axis=None):
+        #     bool_id = (df_old['model'].str.contains(model_data.name)) & \
+        #               (df_old['corpora'].str.contains(model_data.corpora)) & \
+        #               (df_old['rep'] == model_data.rep) & \
+        #               (df_old['path'].str.contains(model_data.path)) & \
+        #               (df_old['scoring_method'].str.contains(scoring_method))
+        #     if df_old[bool_id].any(axis=None):
+        #         print(f'Skipping {model_data.name:<40} corpora={model_data.corpora:<40} rep={model_data.rep:<6}')
+        #         continue
 
         # TODO duplicate rows will happen when this script is run once and then again after more BabyBERTa replications
         #  are added to a folder which was previously searched, because the variable "rep" will be assigned differently
